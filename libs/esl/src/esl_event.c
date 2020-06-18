@@ -130,6 +130,7 @@ static const char *EVENT_NAMES[] = {
 	"SEND_INFO",
 	"RECV_INFO",
 	"RECV_RTCP_MESSAGE",
+	"SEND_RTCP_MESSAGE",
 	"CALL_SECURE",
 	"NAT",
 	"RECORD_START",
