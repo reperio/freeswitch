@@ -280,12 +280,7 @@ void octet_string_set_to_zero(void *s, size_t len);
 
 #if defined(__GNUC__) && defined(HAVE_X86)
 /* Fall back. */
-static inline uint32_t be32_to_cpu(uint32_t v)
-{
-    /* optimized for x86. */
-    asm("bswap %0" : "=r"(v) : "0"(v));
-    return v;
-}
+# define be32_to_cpu(x) ntohl((x))
 #else /* HAVE_X86 */
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
