@@ -1013,8 +1013,10 @@ tport_t *tport_base_connect(tport_primary_t *pri,
 
   if (connect(s, ai->ai_addr, (socklen_t)(ai->ai_addrlen)) == SOCKET_ERROR) {
     err = su_errno();
+#ifndef __sun
     if (!su_is_blocking(err))
       TPORT_CONNECT_ERROR(err, connect);
+#endif
     events = SU_WAIT_CONNECT | SU_WAIT_ERR;
     wakeup = tport_connected;
     what = "connecting";
