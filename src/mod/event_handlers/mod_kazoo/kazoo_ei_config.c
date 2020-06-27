@@ -128,7 +128,7 @@ switch_status_t kazoo_ei_config(switch_xml_t cfg) {
 	kazoo_globals.node_receiver_queue_timeout = 100000;
 	kazoo_globals.node_sender_queue_timeout = 0;
 	kazoo_globals.port = 0;
-	kazoo_globals.io_fault_tolerance = 3;
+	kazoo_globals.io_fault_tolerance = 5;
 	kazoo_globals.io_fault_tolerance_sleep = 100000; // 100 ms
 	kazoo_globals.json_encoding = ERLANG_TUPLE;
 	kazoo_globals.delay_before_initial_fetch = 10000000;
