@@ -271,6 +271,9 @@ typedef struct {
 
 struct switch_rtp;
 
+static void switch_rtp_dtls_init();
+static void switch_rtp_dtls_destroy();
+
 #define MAX_DTLS_MTU 4096
 
 typedef struct switch_dtls_s {
@@ -1531,6 +1534,7 @@ SWITCH_DECLARE(void) switch_rtp_init(switch_memory_pool_t *pool)
 	srtp_init();
 #endif
 	switch_mutex_init(&port_lock, SWITCH_MUTEX_NESTED, pool);
+	switch_rtp_dtls_init();
 	global_init = 1;
 }
 
@@ -2596,7 +2600,7 @@ SWITCH_DECLARE(void) switch_rtp_shutdown(void)
 #ifdef ENABLE_SRTP
 	srtp_crypto_kernel_shutdown();
 #endif
-
+	switch_rtp_dtls_destroy();
 }
 
 SWITCH_DECLARE(switch_port_t) switch_rtp_set_start_port(switch_port_t port)
@@ -3666,6 +3670,25 @@ static BIO_METHOD dtls_bio_filter_methods = {
 static BIO_METHOD *dtls_bio_filter_methods = NULL;
 #endif
 
+static void switch_rtp_dtls_init() {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	dtls_bio_filter_methods = BIO_meth_new(BIO_TYPE_FILTER | BIO_get_new_index(), "DTLS filter");
+	BIO_meth_set_write(dtls_bio_filter_methods, dtls_bio_filter_write);
+	BIO_meth_set_ctrl(dtls_bio_filter_methods, dtls_bio_filter_ctrl);
+	BIO_meth_set_create(dtls_bio_filter_methods, dtls_bio_filter_new);
+	BIO_meth_set_destroy(dtls_bio_filter_methods, dtls_bio_filter_free);
+#endif
+}
+
+static void switch_rtp_dtls_destroy() {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	if (dtls_bio_filter_methods) {
+		BIO_meth_free(dtls_bio_filter_methods);
+		dtls_bio_filter_methods = NULL;
+	}
+#endif
+}
+
 ///////////
 
 
@@ -3908,11 +3931,7 @@ SWITCH_DECLARE(switch_status_t) switch_rtp_add_dtls(switch_rtp_t *rtp_session, d
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 	dtls->filter_bio = BIO_new(BIO_dtls_filter());
 #else
-	dtls_bio_filter_methods = BIO_meth_new(BIO_TYPE_FILTER | BIO_get_new_index(), "DTLS filter");
-	BIO_meth_set_write(dtls_bio_filter_methods, dtls_bio_filter_write);
-	BIO_meth_set_ctrl(dtls_bio_filter_methods, dtls_bio_filter_ctrl);
-	BIO_meth_set_create(dtls_bio_filter_methods, dtls_bio_filter_new);
-	BIO_meth_set_destroy(dtls_bio_filter_methods, dtls_bio_filter_free);
+	switch_assert(dtls_bio_filter_methods);
 	dtls->filter_bio = BIO_new(dtls_bio_filter_methods);
 #endif
 
@@ -8935,6 +8954,7 @@ SWITCH_DECLARE(int) switch_rtp_write_frame(switch_rtp_t *rtp_session, switch_fra
 	rtp_msg_t *send_msg = NULL;
 	srtp_hdr_t local_header;
 	int r = 0;
+	switch_status_t status;
 
 	if (!switch_rtp_ready(rtp_session) || !rtp_session->remote_addr) {
 		return -1;
@@ -8999,8 +9019,12 @@ SWITCH_DECLARE(int) switch_rtp_write_frame(switch_rtp_t *rtp_session, switch_fra
 
 		}
 
-		if (switch_socket_sendto(rtp_session->sock_output, rtp_session->remote_addr, 0, frame->packet, &bytes) != SWITCH_STATUS_SUCCESS) {
-			return -1;
+		if ((status = switch_socket_sendto(rtp_session->sock_output, rtp_session->remote_addr, 0, frame->packet, &bytes)) != SWITCH_STATUS_SUCCESS) {
+			if (rtp_session->flags[SWITCH_RTP_FLAG_DEBUG_RTP_WRITE]) {
+				switch_log_printf(SWITCH_CHANNEL_SESSION_LOG_CLEAN(rtp_session->session), SWITCH_LOG_ERROR, "bytes: %" SWITCH_SIZE_T_FMT ", status: %d", bytes, status);
+			}
+
+			return -1 * status;
 		}
 
 

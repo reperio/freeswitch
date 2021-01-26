@@ -475,7 +475,7 @@ void sofia_glue_store_session_id(switch_core_session_t *session, sofia_profile_t
 		struct private_object *tech_pvt = switch_core_session_get_private(session);
 		switch_channel_set_variable(channel, SWITCH_RFC7989_SESSION_ID_VARIABLE, a_id);
 		if (tech_pvt && tech_pvt->sofia_private && !tech_pvt->sofia_private->rfc7989_uuid) {
-			tech_pvt->sofia_private->rfc7989_uuid = su_strdup(tech_pvt->nh->nh_home, a_id);
+			tech_pvt->sofia_private->rfc7989_uuid = su_strdup(nua_handle_get_home(tech_pvt->nh), a_id);
 		}
 	}
 
@@ -532,7 +532,7 @@ char *sofia_glue_session_id_header(switch_core_session_t *session, sofia_profile
 				struct private_object *tech_pvt = switch_core_session_get_private(session);
 				switch_channel_set_variable(channel, SWITCH_RFC7989_APP_SESSION_ID_VARIABLE, a_id);
 				if (tech_pvt && tech_pvt->sofia_private && !tech_pvt->sofia_private->rfc7989_uuid) {
-					tech_pvt->sofia_private->rfc7989_uuid = su_strdup(tech_pvt->nh->nh_home, a_id);
+					tech_pvt->sofia_private->rfc7989_uuid = su_strdup(nua_handle_get_home(tech_pvt->nh), a_id);
 				}
 			}
 		}
@@ -559,7 +559,7 @@ char *sofia_glue_session_id_header(switch_core_session_t *session, sofia_profile
 			struct private_object *tech_pvt = switch_core_session_get_private(session);
 			switch_channel_set_variable(channel, SWITCH_RFC7989_APP_SESSION_ID_VARIABLE, a_id);
 			if (tech_pvt && tech_pvt->sofia_private && !tech_pvt->sofia_private->rfc7989_uuid) {
-				tech_pvt->sofia_private->rfc7989_uuid = su_strdup(tech_pvt->nh->nh_home, a_id);
+				tech_pvt->sofia_private->rfc7989_uuid = su_strdup(nua_handle_get_home(tech_pvt->nh), a_id);
 			}
 		}
 		switch_log_printf(SWITCH_CHANNEL_SESSION_LOG(session), SWITCH_LOG_DEBUG, 
@@ -601,7 +601,7 @@ char *sofia_glue_session_id_header(switch_core_session_t *session, sofia_profile
 			struct private_object *tech_pvt = switch_core_session_get_private(session);
 			switch_channel_set_variable(channel, SWITCH_RFC7989_APP_SESSION_ID_VARIABLE, a_id);
 			if (tech_pvt && tech_pvt->sofia_private) {
-				tech_pvt->sofia_private->rfc7989_uuid = su_strdup(tech_pvt->nh->nh_home, a_id);
+				tech_pvt->sofia_private->rfc7989_uuid = su_strdup(nua_handle_get_home(tech_pvt->nh), a_id);
 			}
 		}
 		b_id = switch_channel_get_variable(channel, SWITCH_RFC7989_SESSION_ID_VARIABLE);
@@ -1030,6 +1030,7 @@ switch_status_t sofia_glue_do_invite(switch_core_session_t *session)
 	char *alert_info = NULL;
 	const char *max_forwards = NULL;
 	const char *alertbuf;
+	const char *identity = NULL;
 	private_object_t *tech_pvt = switch_core_session_get_private(session);
 	switch_channel_t *channel = switch_core_session_get_channel(session);
 	switch_caller_profile_t *caller_profile;
@@ -1121,6 +1122,8 @@ switch_status_t sofia_glue_do_invite(switch_core_session_t *session)
 	if ((alertbuf = switch_channel_get_variable(channel, "alert_info"))) {
 		alert_info = switch_core_session_sprintf(tech_pvt->session, "Alert-Info: %s", alertbuf);
 	}
+
+	identity = switch_channel_get_variable(channel, "sip_h_identity");
 
 	max_forwards = switch_channel_get_variable(channel, SWITCH_MAX_FORWARDS_VARIABLE);
 
@@ -1500,7 +1503,7 @@ switch_status_t sofia_glue_do_invite(switch_core_session_t *session)
 
 		switch_safe_free(d_url);
 
-		if (!(sofia_private = su_alloc(tech_pvt->nh->nh_home, sizeof(*sofia_private)))) {
+		if (!(sofia_private = su_alloc(nua_handle_get_home(tech_pvt->nh), sizeof(*sofia_private)))) {
 			abort();
 		}
 
@@ -1592,14 +1595,14 @@ switch_status_t sofia_glue_do_invite(switch_core_session_t *session)
 
 	if ((val = switch_channel_get_variable(tech_pvt->channel, "sip_invite_cseq"))) {
 		uint32_t callsequence = (uint32_t) strtoul(val, NULL, 10);
-		cseq = sip_cseq_create(tech_pvt->nh->nh_home, callsequence, SIP_METHOD_INVITE);
+		cseq = sip_cseq_create(nua_handle_get_home(tech_pvt->nh), callsequence, SIP_METHOD_INVITE);
 	}
 
 
 	switch_channel_clear_flag(channel, CF_MEDIA_ACK);
 
 	if (handle_full_from) {
-		tech_pvt->nh->nh_has_invite = 1;
+		nua_handle_set_has_invite(tech_pvt->nh, 1);
 	}
 
 	if ((mp = sofia_media_get_multipart(session, "sip_multipart", tech_pvt->mparams.local_sdp_str, &mp_type))) {
@@ -1651,6 +1654,7 @@ switch_status_t sofia_glue_do_invite(switch_core_session_t *session)
 				   TAG_IF(!zstr(tech_pvt->preferred_id), SIPTAG_P_PREFERRED_IDENTITY_STR(tech_pvt->preferred_id)),
 				   TAG_IF(!zstr(tech_pvt->asserted_id), SIPTAG_P_ASSERTED_IDENTITY_STR(tech_pvt->asserted_id)),
 				   TAG_IF(!zstr(tech_pvt->privacy), SIPTAG_PRIVACY_STR(tech_pvt->privacy)),
+				   TAG_IF(!zstr(identity), SIPTAG_IDENTITY_STR(identity)),
 				   TAG_IF(!zstr(alert_info), SIPTAG_HEADER_STR(alert_info)),
 				   TAG_IF(!zstr(extra_headers), SIPTAG_HEADER_STR(extra_headers)),
 				   TAG_IF(sofia_test_pflag(tech_pvt->profile, PFLAG_PASS_CALLEE_ID), SIPTAG_HEADER_STR("X-FS-Support: " FREESWITCH_SUPPORT)),
@@ -1693,6 +1697,7 @@ switch_status_t sofia_glue_do_invite(switch_core_session_t *session)
 				   TAG_IF(!zstr(extra_headers), SIPTAG_HEADER_STR(extra_headers)),
 				   TAG_IF(sofia_test_pflag(tech_pvt->profile, PFLAG_PASS_CALLEE_ID), SIPTAG_HEADER_STR("X-FS-Support: " FREESWITCH_SUPPORT)),
 				   TAG_IF(!zstr(max_forwards), SIPTAG_MAX_FORWARDS_STR(max_forwards)),
+				   TAG_IF(!zstr(identity), SIPTAG_IDENTITY_STR(identity)),
 				   TAG_IF(!zstr(route_uri), NUTAG_PROXY(route_uri)),
 				   TAG_IF(!zstr(route), SIPTAG_ROUTE_STR(route)),
 				   TAG_IF(!zstr(invite_route_uri), NUTAG_INITIAL_ROUTE_STR(invite_route_uri)),
@@ -3333,8 +3338,8 @@ char *sofia_glue_gen_contact_str(sofia_profile_t *profile, sip_t const *sip, nua
 	}
 
 	if (sip->sip_record_route) {
-		char *full_contact = sip_header_as_string(nh->nh_home, (void *) contact);
-		char *route = sofia_glue_strip_uri(sip_header_as_string(nh->nh_home, (void *) sip->sip_record_route));
+		char *full_contact = sip_header_as_string(nua_handle_get_home(nh), (void *) contact);
+		char *route = sofia_glue_strip_uri(sip_header_as_string(nua_handle_get_home(nh), (void *) sip->sip_record_route));
 		char *full_contact_dup;
 		char *route_encoded;
 		int route_encoded_len;
@@ -3348,7 +3353,7 @@ char *sofia_glue_gen_contact_str(sofia_profile_t *profile, sip_t const *sip, nua
 		free(route_encoded);
 	}
 	else if (np->is_nat && np->fs_path) {
-		char *full_contact = sip_header_as_string(nh->nh_home, (void *) contact);
+		char *full_contact = sip_header_as_string(nua_handle_get_home(nh), (void *) contact);
 		char *full_contact_dup;
 		char *path_encoded;
 		int path_encoded_len;
