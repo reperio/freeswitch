@@ -2044,7 +2044,6 @@ static int using_ice(switch_rtp_t *rtp_session)
 	return 0;
 }
 
-// switch_rtp_
 static void switch_send_rtcp_event(switch_rtp_t *rtp_session ,struct switch_rtcp_sender_report *sr,struct switch_rtcp_report_block *rtcp_report_block) {
 	if (sr && rtcp_report_block) {
 		switch_event_t *event;
