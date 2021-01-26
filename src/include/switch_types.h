@@ -147,6 +147,7 @@ SWITCH_BEGIN_EXTERN_C
 #define SWITCH_RECORD_POST_PROCESS_EXEC_APP_VARIABLE "record_post_process_exec_app"
 #define SWITCH_RECORD_POST_PROCESS_EXEC_API_VARIABLE "record_post_process_exec_api"
 
+
 #define SWITCH_CHANNEL_EXECUTE_ON_ANSWER_VARIABLE "execute_on_answer"
 #define SWITCH_CHANNEL_EXECUTE_ON_PRE_ANSWER_VARIABLE "execute_on_pre_answer"
 #define SWITCH_CHANNEL_EXECUTE_ON_MEDIA_VARIABLE "execute_on_media"
@@ -241,6 +242,7 @@ SWITCH_BEGIN_EXTERN_C
 #define SWITCH_DEFAULT_VIDEO_SIZE 1200
 #define SWITCH_RTCP_AUDIO_INTERVAL_MSEC "1000"
 #define SWITCH_RTCP_VIDEO_INTERVAL_MSEC "1000"
+#define SWITCH_RTCP_FIRE_EVENTS = "rtcp_fire_events";
 
 #define TEXT_UNICODE_LINEFEED {0xe2, 0x80, 0xa8}
 #define MAX_FMTP_LEN 256
@@ -742,7 +744,7 @@ typedef struct {
 } switch_rtcp_numbers_t;
 
 typedef struct {
-	uint16_t nack_count; 
+	uint16_t nack_count;
 	uint16_t fir_count;
 	uint16_t pli_count;
 	uint16_t sr_count;
@@ -2833,7 +2835,7 @@ typedef struct secure_settings_s {
 	char *local_crypto_key;
 	char *remote_crypto_key;
 
-	/* 
+	/*
 	 * MKI support (as per rfc4568).
 	 * Normally single crypto attribute contains one key-material in a <key-params> section, e.g. "inline: KEYSALT" or "inline: KEYSALT|2^LIFETIME_BITS".
 	 * But if MKI is used, then one or more key-materials are present in the <key-params> section of the crypto attribute. Each key-material follows the format:
@@ -2852,7 +2854,7 @@ typedef struct secure_settings_s {
 	unsigned long						remote_key_material_n;			/* number of key_materials in the linked list for inbound SRTP */
 } switch_secure_settings_t;
 
-/* Default MKI index used for packets send from FS. We always use first key if multiple master keys are present in the crypto attribute. */ 
+/* Default MKI index used for packets send from FS. We always use first key if multiple master keys are present in the crypto attribute. */
 #define SWITCH_CRYPTO_MKI_INDEX 0
 
 /* max number of MKI in a single crypto line supported */
