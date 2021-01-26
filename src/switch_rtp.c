@@ -2270,9 +2270,8 @@ static int check_rtcp_and_ice(switch_rtp_t *rtp_session)
 				rtp_session->rtcp_send_msg.header.count = 1; /* reception report block count */
 				stats->sent_pkt_count = 0;
 				if (switch_channel_var_true(switch_core_session_get_channel(rtp_session->session), SWITCH_RTCP_FIRE_EVENTS)) {
-					switch_send_rtcp_event(rtp_session, sr, rtcp_report_block);
-				}
-
+ 					switch_send_rtcp_event(rtp_session, sr, rtcp_report_block);
+ 				}
 			}
 			switch_log_printf(SWITCH_CHANNEL_SESSION_LOG(rtp_session->session), SWITCH_LOG_DEBUG1, "Sending RTCP SR (ssrc=%u)\n", rtp_session->ssrc);
 		}
