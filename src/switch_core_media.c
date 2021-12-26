@@ -8680,14 +8680,6 @@ SWITCH_DECLARE(switch_status_t) switch_core_media_activate_rtp(switch_core_sessi
 		goto end;
 	}
 
-	if (switch_channel_var_true(session->channel, "fire_rtcp_events")) {
-		flags[SWITCH_RTP_FLAG_AUDIO_FIRE_SEND_RTCP_EVENT] = 1;
-		if (switch_channel_test_flag(session->channel, CF_VIDEO_POSSIBLE) && 
-				switch_channel_var_true(session->channel, "rtp_video_send_rtcp_message_event")) { 
-			flags[SWITCH_RTP_FLAG_VIDEO_FIRE_SEND_RTCP_EVENT] = 1;
-		}
-	}
-
 	if (!is_reinvite) {
 		if (switch_rtp_ready(a_engine->rtp_session)) {
 			if (switch_channel_test_flag(session->channel, CF_TEXT_POSSIBLE) && !switch_rtp_ready(t_engine->rtp_session)) {

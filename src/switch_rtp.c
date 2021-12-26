@@ -2330,10 +2330,7 @@ static int check_rtcp_and_ice(switch_rtp_t *rtp_session)
 				rtcp_generate_report_block(rtp_session, rtcp_report_block, nack_dup);
 				rtp_session->rtcp_send_msg.header.count = 1; /* reception report block count */
 				stats->sent_pkt_count = 0;
-				if ((!rtp_session->flags[SWITCH_RTP_FLAG_VIDEO] && rtp_session->flags[SWITCH_RTP_FLAG_AUDIO_FIRE_SEND_RTCP_EVENT]) ||
-					(rtp_session->flags[SWITCH_RTP_FLAG_VIDEO] && rtp_session->flags[SWITCH_RTP_FLAG_VIDEO_FIRE_SEND_RTCP_EVENT])) {
- 					switch_send_rtcp_event(rtp_session, sr, rtcp_report_block);
-				}
+				switch_send_rtcp_event(rtp_session, sr, rtcp_report_block);
 			}
 			switch_log_printf(SWITCH_CHANNEL_SESSION_LOG(rtp_session->session), SWITCH_LOG_DEBUG1, "Sending RTCP SR (ssrc=%u)\n", rtp_session->ssrc);
 		}
